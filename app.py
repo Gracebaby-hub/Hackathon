@@ -12,34 +12,29 @@ from tools import (
 
 load_dotenv()
 
-# Shared Bedrock Model instance
 model = BedrockModel(
     model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
     region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"),
     streaming=False
 )
 
-# 1. SPECIALIST: Telemetry & Usage Analyst Agent
-analyst_agent = Agent(
+# 1. Enyi m (Telemetry & Usage Analyst)
+enyi_m = Agent(
     model=model,
     system_prompt="""
-    You are the Telemetry & Usage Specialist Agent.
-    Your sole focus is to query usage data with `audit_subscriptions_and_usage`,
-    analyze cost-per-hour efficiency, and categorize subscriptions by health status
-    (Healthy, Dormant Waste, Underutilized, Expiring Trial).
+    You are 'Enyi m', the Telemetry Specialist.
+    Your focus is to query usage data via `audit_subscriptions_and_usage` and assess cost-per-hour efficiency.
     """,
     tools=[audit_subscriptions_and_usage]
 )
 
-# 2. SPECIALIST: Action & Execution Agent
-execution_agent = Agent(
+# 2. Ore mi (Action & Execution Specialist)
+ore_mi = Agent(
     model=model,
     system_prompt="""
-    You are the Action & Execution Specialist Agent.
-    Your responsibilities:
-    1. Cut off expiring trials if auto-cancellation is allowed using `execute_preauthorized_trial_cutoff`.
-    2. Stage human approval cards for dormant/underutilized services using `stage_cancellation_action`.
-    3. Finalize cancellations/downgrades upon human confirmation using `execute_confirmed_action`.
+    You are 'Ore mi', the Execution Specialist.
+    Handle trial cutoffs via `execute_preauthorized_trial_cutoff`, stage items waiting for user approval via `stage_cancellation_action`,
+    and execute confirmed actions with `execute_confirmed_action`.
     """,
     tools=[
         stage_cancellation_action,
@@ -48,56 +43,59 @@ execution_agent = Agent(
     ]
 )
 
-# 3. COORDINATOR: Lead Orchestration Agent
-coordinator_prompt = """
-You are the Lead Subscription Coordinator Agent.
-You manage the multi-agent workflow to eliminate recurring subscription waste and safeguard user finances.
+# 3. Aboki na (Wishlist & Rebalancing Specialist)
+aboki_na = Agent(
+    model=model,
+    system_prompt="""
+    You are 'Aboki na', the Rebalancing Specialist.
+    Use `rebalance_savings_to_wishlist` to show how monthly savings fund personal goals.
+    """,
+    tools=[rebalance_savings_to_wishlist]
+)
 
-Your Workflow:
-1. When starting an audit, delegate data analysis to the Telemetry Analyst and action staging to the Execution Agent.
-2. Call `rebalance_savings_to_wishlist` to project financial reallocation toward user goals.
-3. Present an executive summary detailing auto-executed actions, staged human approval decisions, and budget impact.
-4. When the user approves/rejects an action, delegate execution to the Execution Agent and present the final updated savings.
+# 4. Paddy (Lead Coordinator)
+paddy_prompt = """
+You are 'Paddy', the user's Everyday Autonomous Subscription Co-Pilot.
+Coordinate your squad:
+- Consult 'Enyi m' for telemetry analysis.
+- Consult 'Ore mi' for pre-authorized actions and staging decisions waiting for user approval.
+- Consult 'Aboki na' to calculate wishlist rebalancing.
+
+Label pending user decisions clearly as 'Waiting for your approval'.
 """
 
-coordinator_agent = Agent(
+paddy = Agent(
     model=model,
-    system_prompt=coordinator_prompt,
+    system_prompt=paddy_prompt,
     tools=[
-        analyst_agent.as_tool(
-            name="telemetry_analyst",
-            description="Analyzes subscription activity, logins, usage hours, and cost efficiency metrics."
-        ),
-        execution_agent.as_tool(
-            name="action_executor",
-            description="Executes pre-authorized trial cutoffs, stages human-in-the-loop approvals, and applies confirmed cancellations."
-        ),
-        rebalance_savings_to_wishlist
+        enyi_m.as_tool(name="enyi_m", description="Analyzes subscription activity, usage hours, and cost-per-hour metrics."),
+        ore_mi.as_tool(name="ore_mi", description="Executes pre-authorized trial cutoffs and stages actions waiting for approval."),
+        aboki_na.as_tool(name="aboki_na", description="Calculates wishlist goal funding timelines from freed savings.")
     ]
 )
 
 if __name__ == "__main__":
-    print("\n🔍 Initializing Multi-Agent Subscription & Usage Audit System...\n")
+    print("\n🛡️ Initializing Paddy & Squad (Enyi m, Ore mi, Aboki na)...\n")
     audit_trigger = (
-        "Run the scheduled subscription audit. Have the telemetry analyst evaluate usage, "
-        "have the action executor handle pre-authorized trials and stage approvals, "
-        "and project wishlist savings rebalancing."
+        "Run the scheduled subscription audit. Have Enyi m evaluate usage, "
+        "have Ore mi auto-cancel trials and stage decisions waiting for your approval, "
+        "and have Aboki na project wishlist savings rebalancing."
     )
     
-    initial_report = coordinator_agent(audit_trigger)
+    initial_report = paddy(audit_trigger)
     print("\n" + str(initial_report) + "\n")
 
     print("=" * 65)
-    print("Multi-Agent System Ready. Enter approval (e.g. 'Cancel FitPulse', 'exit'):")
+    print("Paddy is standing by. Type an instruction (e.g. 'Cancel FitPulse', 'exit'):")
     print("=" * 65)
     
     while True:
         user_input = input("\nYou > ").strip()
         if user_input.lower() in ["exit", "quit", "q"]:
-            print("Multi-Agent session terminated. Have a productive day!")
+            print("Paddy session closed. Take care!")
             break
         if not user_input:
             continue
             
-        response = coordinator_agent(user_input)
-        print(f"\nLead Coordinator > {str(response)}")
+        response = paddy(user_input)
+        print(f"\nPaddy > {str(response)}")
