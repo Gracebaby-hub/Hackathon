@@ -17,29 +17,37 @@ Our Everyday Agent acts as an intelligent financial co-pilot with a multi-agent 
 ---
 
 ## 🏗️ Architecture
-+--------------------------------+
-             |    Human / User (CLI / Chat)   |
-             +--------------------------------+
-                             ▲
-                             │ Natural Language Approvals
-                             ▼
-             +--------------------------------+
-             |  SubscriptionCoordinatorAgent  | (Lead Orchestration)
-             |       (Amazon Bedrock)         |
-             +--------------------------------+
-                             │
-             +---------------+---------------+
-             │                               │
-             ▼                               ▼
-+---------------------------------+  +---------------------------------+
-|     TelemetryAnalystAgent       |  |      ActionExecutionAgent       |
-|          (Specialist)           |  |          (Specialist)           |
-+---------------------------------+  +---------------------------------+
-| • audit_subscriptions_and_usage |  | • execute_preauthorized_cutoff  |
-| • Cost-per-hour calculations    |  | • stage_cancellation_action     |
-| • Dormancy flagging             |  | • execute_confirmed_action      |
-+---------------------------------+  +---------------------------------+
----
++---------------------------------------+
+                     |    User Interface (Streamlit / CLI)   |
+                     +---------------------------------------+
+                                         ▲
+                                         │ Natural Language Dialogue
+                                         ▼
+                     +---------------------------------------+
+                     |                 PADDY                 |
+                     |       (Lead Orchestrator Agent)       |
+                     |         Amazon Bedrock Claude         |
+                     +---------------------------------------+
+                                         │
+        +--------------------------------+--------------------------------+
+        │                                │                                │
+        ▼                                ▼                                ▼
++--------------------+        +--------------------+          +--------------------+
+|      ENYI M        |        |       ORE MI       |          |      ABOKI NA      |
+| (Telemetry Expert) |        | (Execution Guard)  |          | (Goal Rebalancer)  |
++--------------------+        +--------------------+          +--------------------+
+| • Reads usage logs |        | • Auto-cuts trials |          | • Models savings   |
+| • Cost-per-hour    |        | • Stages approvals |          | • Rebalances cash  |
+| • Flags dormancy   |        | • Executes changes |          | • Wishlist timeline|
++--------------------+        +--------------------+          +--------------------+
+        │                                │                                │
+        +--------------------------------+--------------------------------+
+                                         │
+                                         ▼
+                     +---------------------------------------+
+                     | Deterministic Tool & DB Access Layer  |
+                     |       (Mock DB / Banking Feeds)       |
+                     +---------------------------------------+
 
 ## 🛠️ Tech Stack & Prerequisites
 * **Runtime:** Python 3.10+
